@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Welcome!{% endblock %}</title>
+        {# Run `composer require symfony/webpack-encore-bundle`
+           and uncomment the following Encore helpers to start using Symfony UX #}
+        {% block stylesheets %}
+            {#{{ encore_entry_link_tags('app') }}#}
+        {% endblock %}
+
+        {% block javascripts %}
+            {#{{ encore_entry_script_tags('app') }}#}
+        {% endblock %}
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+        <script
+            src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+    </head>
+    <body>
+        {% block body %}
+            <div id="pr-id" style="display: none">0</div>
+        <h1>Shopping Basket</h1>
+            <h2><a href="/api">docs</a></h2>
+
+            <div class="frmSearch">
+                <input type="text" id="search-box" placeholder="Search Product By Title" />
+                <div id="suggesstion-box"></div>
+            </div>
+
+            <div>
+                <input type="text" id="id" placeholder="productId">
+                <input type="text" id="quantity" placeholder="quantity">
+                <button class="btn btn-done" id="cs-btn">add</button>
+            </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-12 col-md-10 col-md-offset-1">
+                        <table class="table table-hover">
+                            <tbody>
+                            <span class="pr-te">
+
+                            </span>
+
+                            <tr>
+                                <td>   </td>
+                                <td>   </td>
+                                <td>   </td>
+                                <span class="total">
+
+                                </span>
+                            </tr>
+                            <tr>
+                                <td>   </td>
+                                <td>   </td>
+                                <td>   </td>
+                                <td>
+                            </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endblock %}
+    </body>
+    <script>
+        $(document).ready(function(){
+
+
+            $("#cs-btn").click(function (){
+
+                if ($('#pr-id').text() == 0){
+                $.ajax({
+                    type: "POST",
+                    url: "/api/shopping_baskets",
+                    contentType: 'application/ld+json',
+                    header: {
+                        'Content-Type': 'application/ld+json'
+                    },
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        products: [
+                            {
+                                product: "/api/products/" + $('#id').val(),
+                                quantity:  parseInt($('#quantity').val())
+                            }
+                        ]
+                    }),
+                    success: function(data){
+                        $('#pr-id').html(data.id);
+
+
+
+                        for (var i in data['products']) {
+
+                            var image = 'http://icons.iconarchive.com/icons/custom-icon-design/flatastic-2/72/product-icon.png';
+
+                            if(data['products'][i].product.icon) {
+                                image = "https://localhost" + data['products'][i].product.icon.contentUrl;
+                            }
+
+                            $('.pr-te').append(
+                                "<tr class='row-tl' data-ti='"+ data['products'][i].id +"' style='border 1px solid red;margin-top: 20px'><td class='col-sm-12 col-md-12'><div class='media'><a class='thumbnail pull-left' href='#'> <img class='media-object' src='"+ image +"' style='width: 72px; height: 72px;'> </a> <div class='media-body'> <h4 class='media-heading'><a href='#' class='title-tl'>"+ data['products'][i].product.title +"</a></h4> </div> </div> </td>" +
+                                "<td class='col-sm-1 col-md-1 text-center'><strong>$ "+ data['products'][i].product.price +"</strong></td>" +
+                                "<td class='col-sm-1 col-md-1 text-center'><strong>"+ data['products'][i].quantity +"</strong></td>" +
+                                "<hr>"
+                        );
+
+                            $('.total').html("<td><h3>Total  ::</h3></td> <td class='text-right'><h3><strong>$"+data['total']+"</strong></h3></td>");
+                        }
+                    }
+                });
+                } else {
+                    $.ajax({
+                        type: "GET",
+                        url: "/api/shopping_baskets/"+$('#pr-id').text(),
+                        contentType: 'application/ld+json',
+                        header: {
+                            'Content-Type': 'application/ld+json'
+                        },
+                        data:'title='+$(this).val(),
+                        beforeSend: function(){
+                            $("#search-box").css("background","#FFF url(LoaderIcon.gif) no-repeat 165px");
+                        },
+                        success: function(data){
+                            var products = [];
+
+                            var status = true;
+                            // console.log(data);
+                            for (var index in data['products']) {
+                                // console.log(data['products'][index]['product']);
+                                // console.log(data['products'][index].id);
+                                products.push({product: "/api/products/" + data['products'][index]['product']['id'], quantity: data['products'][index].quantity});
+
+                                if(data['products'][index]['product']['id'] == $('#id').val()) {
+                                    alert("product must be unique");
+                                    status = false
+                                }
+                            }
+
+
+
+                            if (status == true) {
+                                products.push({product: "/api/products/" + $('#id').val(), quantity: parseInt($('#quantity').val())});
+                            }
+
+
+                            $.ajax({
+                                type: "PUT",
+                                url: "/api/shopping_baskets/"+$('#pr-id').text(),
+                                contentType: 'application/ld+json',
+                                header: {
+                                    'Content-Type': 'application/ld+json'
+                                },
+                                dataType: 'json',
+                                data: JSON.stringify({
+                                    products: products
+                                }),
+                                failed: function (data) {
+                                  console.log("failed") ;
+                                },
+                                success: function(data){
+                                    console.log(data);
+                                    $('#pr-id').html(data.id);
+
+                                    $('.pr-te').html('');
+
+                                    for (var i in data['products']) {
+
+                                        var image = 'http://icons.iconarchive.com/icons/custom-icon-design/flatastic-2/72/product-icon.png';
+
+                                        if(data['products'][i].product.icon) {
+                                            image = "https://localhost" + data['products'][i].product.icon.contentUrl;
+                                        }
+
+                                        console.log(image);
+
+                                        $('.pr-te').append(
+                                            "<tr class='row-tl' data-ti='"+ data['products'][i].id +"' style='border 1px solid red;margin-top: 20px'><td class='col-sm-12 col-md-12'><div class='media'><a class='thumbnail pull-left' href='#'> <img class='media-object' src='"+ image +"' style='width: 72px; height: 72px;'> </a> <div class='media-body'> <h4 class='media-heading'><a href='#' class='title-tl'>"+ data['products'][i].product.title +"</a></h4> </div> </div> </td>" +
+                                            "<td class='col-sm-1 col-md-1 text-center'><strong>$ "+ data['products'][i].product.price +"</strong></td>" +
+                                            "<td class='col-sm-1 col-md-1 text-center'><strong>"+ data['products'][i].quantity +"</strong></td>" +
+                                            "<hr>"
+                                        );
+
+                                        $('.total').html("<td><h3>Total  ::</h3></td> <td class='text-right'><h3><strong>$"+data['total']+"</strong></h3></td>");
+                                    }
+                                }
+                            });
+
+                        }
+                    });
+
+                }
+            });
+
+            $("#search-box").keyup(function(){
+                $.ajax({
+                    type: "GET",
+                    url: "/api/products?page=1",
+                    contentType: 'application/ld+json',
+                    header: {
+                        'Content-Type': 'application/ld+json'
+                    },
+                    data:'title='+$(this).val(),
+                    beforeSend: function(){
+                        $("#search-box").css("background","#FFF url(LoaderIcon.gif) no-repeat 165px");
+                    },
+                    success: function(data){
+                        $("#suggesstion-box").show();
+
+                        for (var i in data['hydra:member']) {
+                            $('#suggesstion-box').append(data['hydra:member'][i].id + "::" + data['hydra:member'][i].title + '<br/>');
+                        }
+
+                        $("#search-box").css("background","#FFF");
+                    }
+                });
+            });
+        });
+        //To select country name
+        function selectCountry(val) {
+            $("#search-box").val(val);
+            $("#suggesstion-box").hide();
+        }
+    </script>
+</html>

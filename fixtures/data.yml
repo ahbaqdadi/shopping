@@ -1,0 +1,20 @@
+App\Entity\Product:
+    product_{1..99}:
+        title: "pro"
+        description: <text()>
+        price: 10
+    oneProduct:
+        title: "amir"
+        description: <text()>
+        price: 10
+        
+
+App\Entity\ProductShoppingBasket:
+    productShoppingBasket_{1..100}:
+        product: '@product_*'
+        quantity: 1      
+
+App\Entity\ShoppingBasket:
+    ShoppingBasket_{1..100}:
+        products: ['@productShoppingBasket_*', '@productShoppingBasket_*', '@productShoppingBasket_*']
+        total: 30
